@@ -1,0 +1,117 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthService = void 0;
+const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const jwt_1 = require("@nestjs/jwt");
+const bcrypt = require("bcrypt");
+const user_entity_1 = require("./entities/user.entity");
+const email_service_1 = require("../email/email.service");
+let AuthService = class AuthService {
+    userRepository;
+    jwtService;
+    emailService;
+    constructor(userRepository, jwtService, emailService) {
+        this.userRepository = userRepository;
+        this.jwtService = jwtService;
+        this.emailService = emailService;
+    }
+    generateOTP() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+    async register(createUserDto) {
+        const existingUser = await this.userRepository.findOne({
+            where: { email: createUserDto.email },
+        });
+        if (existingUser) {
+            throw new common_1.ConflictException('Email already exists');
+        }
+        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+        const user = this.userRepository.create({
+            ...createUserDto,
+            password: hashedPassword,
+            isTwoFactorEnabled: true,
+        });
+        await this.userRepository.save(user);
+        const otp = this.generateOTP();
+        user.otpCode = await bcrypt.hash(otp, 10);
+        user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+        await this.userRepository.save(user);
+        await this.emailService.sendOTP(user.email, otp);
+        return { message: 'Registration successful. Please verify your email with the OTP sent.' };
+    }
+    async login(loginDto) {
+        const user = await this.userRepository.findOne({
+            where: { email: loginDto.email },
+        });
+        if (!user) {
+            throw new common_1.UnauthorizedException('Invalid credentials');
+        }
+        const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+        if (!isPasswordValid) {
+            throw new common_1.UnauthorizedException('Invalid credentials');
+        }
+        if (user.isTwoFactorEnabled) {
+            const otp = this.generateOTP();
+            user.otpCode = await bcrypt.hash(otp, 10);
+            user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+            await this.userRepository.save(user);
+            await this.emailService.sendOTP(user.email, otp);
+            return { otpSent: true };
+        }
+        const token = this.generateToken(user);
+        return { token };
+    }
+    async verifyOTP(email, otp) {
+        const user = await this.userRepository.findOne({
+            where: { email },
+        });
+        if (!user || !user.otpCode || !user.otpExpiry) {
+            throw new common_1.UnauthorizedException('Invalid OTP request');
+        }
+        if (user.otpExpiry < new Date()) {
+            throw new common_1.UnauthorizedException('OTP has expired');
+        }
+        const isOTPValid = await bcrypt.compare(otp, user.otpCode);
+        if (!isOTPValid) {
+            throw new common_1.UnauthorizedException('Invalid OTP');
+        }
+        user.otpCode = null;
+        user.otpExpiry = null;
+        if (!user.isVerified) {
+            user.isVerified = true;
+        }
+        await this.userRepository.save(user);
+        const token = this.generateToken(user);
+        return { token };
+    }
+    generateToken(user) {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+        };
+        return this.jwtService.sign(payload);
+    }
+};
+exports.AuthService = AuthService;
+exports.AuthService = AuthService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        jwt_1.JwtService,
+        email_service_1.EmailService])
+], AuthService);
+//# sourceMappingURL=auth.service.js.map
