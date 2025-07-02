@@ -20,14 +20,17 @@ const jwt_1 = require("@nestjs/jwt");
 const bcrypt = require("bcrypt");
 const user_entity_1 = require("./entities/user.entity");
 const email_service_1 = require("../email/email.service");
+const config_1 = require("@nestjs/config");
 let AuthService = class AuthService {
     userRepository;
     jwtService;
     emailService;
-    constructor(userRepository, jwtService, emailService) {
+    configService;
+    constructor(userRepository, jwtService, emailService, configService) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.emailService = emailService;
+        this.configService = configService;
     }
     generateOTP() {
         return Math.floor(100000 + Math.random() * 900000).toString();
@@ -93,6 +96,7 @@ let AuthService = class AuthService {
         user.otpExpiry = null;
         if (!user.isVerified) {
             user.isVerified = true;
+            await this.emailService.sendWelcomeEmail(user.email, user.firstName);
         }
         await this.userRepository.save(user);
         const token = this.generateToken(user);
@@ -105,6 +109,70 @@ let AuthService = class AuthService {
         };
         return this.jwtService.sign(payload);
     }
+    async googleLogin(req) {
+        if (!req.user) {
+            throw new common_1.UnauthorizedException('No user from Google');
+        }
+        let user = await this.userRepository.findOne({
+            where: { email: req.user.email },
+        });
+        if (!user) {
+            user = this.userRepository.create({
+                email: req.user.email,
+                firstName: req.user.firstName,
+                lastName: req.user.lastName,
+                isVerified: true,
+                profilePicture: req.user.picture,
+                password: '',
+            });
+            await this.userRepository.save(user);
+        }
+        const token = this.jwtService.sign({
+            email: user.email,
+            sub: user.id,
+        });
+        return {
+            access_token: token,
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                profilePicture: user.profilePicture,
+            },
+        };
+    }
+    async appleLogin(req) {
+        if (!req.user) {
+            throw new common_1.UnauthorizedException('No user from Apple');
+        }
+        let user = await this.userRepository.findOne({
+            where: { email: req.user.email },
+        });
+        if (!user) {
+            user = this.userRepository.create({
+                email: req.user.email,
+                firstName: req.user.firstName || '',
+                lastName: req.user.lastName || '',
+                isVerified: true,
+                password: '',
+            });
+            await this.userRepository.save(user);
+        }
+        const token = this.jwtService.sign({
+            email: user.email,
+            sub: user.id,
+        });
+        return {
+            access_token: token,
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+            },
+        };
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
@@ -112,6 +180,7 @@ exports.AuthService = AuthService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         jwt_1.JwtService,
-        email_service_1.EmailService])
+        email_service_1.EmailService,
+        config_1.ConfigService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

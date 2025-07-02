@@ -33,6 +33,9 @@ export class User {
   @Column({ default: false })
   isTwoFactorEnabled: boolean;
 
+  @Column({ nullable: true })
+  profilePicture: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

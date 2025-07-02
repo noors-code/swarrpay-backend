@@ -7,6 +7,7 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { EmailService } from '../email/email.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +16,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   private generateOTP(): string {
@@ -101,6 +103,8 @@ export class AuthService {
     user.otpExpiry = null;
     if (!user.isVerified) {
       user.isVerified = true;
+      // Send welcome email after first verification
+      await this.emailService.sendWelcomeEmail(user.email, user.firstName);
     }
     await this.userRepository.save(user);
 
@@ -114,5 +118,83 @@ export class AuthService {
       email: user.email,
     };
     return this.jwtService.sign(payload);
+  }
+
+  async googleLogin(req: any) {
+    if (!req.user) {
+      throw new UnauthorizedException('No user from Google');
+    }
+
+    let user = await this.userRepository.findOne({
+      where: { email: req.user.email },
+    });
+
+    if (!user) {
+      // Create new user from Google data
+      user = this.userRepository.create({
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        isVerified: true, // Google emails are verified
+        profilePicture: req.user.picture,
+        password: '', // No password for Google users
+      });
+      await this.userRepository.save(user);
+    }
+
+    // Generate JWT token
+    const token = this.jwtService.sign({
+      email: user.email,
+      sub: user.id,
+    });
+
+    return {
+      access_token: token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profilePicture: user.profilePicture,
+      },
+    };
+  }
+
+  async appleLogin(req: any) {
+    if (!req.user) {
+      throw new UnauthorizedException('No user from Apple');
+    }
+
+    let user = await this.userRepository.findOne({
+      where: { email: req.user.email },
+    });
+
+    if (!user) {
+      // Create new user from Apple data
+      user = this.userRepository.create({
+        email: req.user.email,
+        firstName: req.user.firstName || '',
+        lastName: req.user.lastName || '',
+        isVerified: true, // Apple emails are verified
+        password: '', // No password for Apple users
+      });
+      await this.userRepository.save(user);
+    }
+
+    // Generate JWT token
+    const token = this.jwtService.sign({
+      email: user.email,
+      sub: user.id,
+    });
+
+    return {
+      access_token: token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    };
   }
 } 

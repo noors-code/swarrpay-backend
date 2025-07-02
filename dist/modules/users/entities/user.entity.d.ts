@@ -8,6 +8,7 @@ export declare class User {
     otpCode: string | null;
     otpExpiry: Date | null;
     isTwoFactorEnabled: boolean;
+    profilePicture: string;
     createdAt: Date;
     updatedAt: Date;
 }

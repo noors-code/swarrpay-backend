@@ -13,8 +13,29 @@ export declare class AuthController {
     } | {
         token: string;
     }>;
-    verifyOTP(verifyOtpDto: VerifyOtpDto): Promise<{
+    verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<{
         token: string;
     }>;
     getProfile(req: any): any;
+    googleAuth(): Promise<void>;
+    googleAuthRedirect(req: any): Promise<{
+        access_token: string;
+        user: {
+            id: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+            profilePicture: string;
+        };
+    }>;
+    appleAuth(): Promise<void>;
+    appleAuthRedirect(req: any): Promise<{
+        access_token: string;
+        user: {
+            id: string;
+            email: string;
+            firstName: string;
+            lastName: string;
+        };
+    }>;
 }
