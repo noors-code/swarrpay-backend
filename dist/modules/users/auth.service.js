@@ -46,15 +46,11 @@ let AuthService = class AuthService {
         const user = this.userRepository.create({
             ...createUserDto,
             password: hashedPassword,
-            isTwoFactorEnabled: true,
+            isTwoFactorEnabled: false,
+            isVerified: true,
         });
         await this.userRepository.save(user);
-        const otp = this.generateOTP();
-        user.otpCode = await bcrypt.hash(otp, 10);
-        user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-        await this.userRepository.save(user);
-        await this.emailService.sendOTP(user.email, otp);
-        return { message: 'Registration successful. Please verify your email with the OTP sent.' };
+        return { message: 'Registration successful.' };
     }
     async login(loginDto) {
         const user = await this.userRepository.findOne({
@@ -66,14 +62,6 @@ let AuthService = class AuthService {
         const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
-        }
-        if (user.isTwoFactorEnabled) {
-            const otp = this.generateOTP();
-            user.otpCode = await bcrypt.hash(otp, 10);
-            user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-            await this.userRepository.save(user);
-            await this.emailService.sendOTP(user.email, otp);
-            return { otpSent: true };
         }
         const token = this.generateToken(user);
         return { token };

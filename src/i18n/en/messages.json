@@ -1,0 +1,36 @@
+{
+  "wallet": {
+    "transaction": {
+      "sent": "You sent {amount} SOL to {address}",
+      "received": "You received {amount} SOL from {address}",
+      "failed": "Transaction failed: {reason}",
+      "daily_limit": "Daily transaction limit reached"
+    },
+    "security": {
+      "pin_required": "Transaction PIN required",
+      "email_confirmation": "Please check your email for transaction confirmation",
+      "address_not_allowed": "Address not in allowed list"
+    },
+    "errors": {
+      "insufficient_funds": "Insufficient funds",
+      "invalid_address": "Invalid wallet address",
+      "network_error": "Network error, please try again"
+    }
+  },
+  "auth": {
+    "login": {
+      "success": "Login successful",
+      "failed": "Login failed",
+      "2fa_required": "2FA verification required"
+    },
+    "register": {
+      "success": "Registration successful",
+      "email_sent": "Verification email sent"
+    }
+  },
+  "regions": {
+    "timezone": "Europe/London",
+    "currency": "EUR",
+    "date_format": "DD/MM/YYYY"
+  }
+} 

@@ -36,20 +36,12 @@ export class AuthService {
     const user = this.userRepository.create({
       ...createUserDto,
       password: hashedPassword,
-      isTwoFactorEnabled: true, // Enable 2FA by default
+      isTwoFactorEnabled: false, // Disable 2FA for testing
+      isVerified: true, // Auto-verify for testing
     });
 
     await this.userRepository.save(user);
-    
-    // Generate and send OTP for email verification
-    const otp = this.generateOTP();
-    user.otpCode = await bcrypt.hash(otp, 10);
-    user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
-    await this.userRepository.save(user);
-    
-    await this.emailService.sendOTP(user.email, otp);
-
-    return { message: 'Registration successful. Please verify your email with the OTP sent.' };
+    return { message: 'Registration successful.' };
   }
 
   async login(loginDto: LoginDto): Promise<{ otpSent: boolean } | { token: string }> {
@@ -66,16 +58,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (user.isTwoFactorEnabled) {
-      const otp = this.generateOTP();
-      user.otpCode = await bcrypt.hash(otp, 10);
-      user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
-      await this.userRepository.save(user);
-      
-      await this.emailService.sendOTP(user.email, otp);
-      return { otpSent: true };
-    }
-
+    // Skip 2FA for testing
     const token = this.generateToken(user);
     return { token };
   }

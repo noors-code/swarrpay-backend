@@ -13,8 +13,14 @@ const typeorm_1 = require("@nestjs/typeorm");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const auth_module_1 = require("./modules/users/auth.module");
+const wallet_module_1 = require("./modules/wallet/wallet.module");
 const email_module_1 = require("./modules/email/email.module");
+const notifications_module_1 = require("./modules/notifications/notifications.module");
+const region_module_1 = require("./modules/region/region.module");
+const schedule_1 = require("@nestjs/schedule");
 const typeorm_config_1 = require("./config/typeorm.config");
+const nestjs_i18n_1 = require("nestjs-i18n");
+const i18n_config_1 = require("./config/i18n.config");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -29,8 +35,13 @@ exports.AppModule = AppModule = __decorate([
                 useFactory: typeorm_config_1.getTypeOrmConfig,
                 inject: [config_1.ConfigService],
             }),
+            nestjs_i18n_1.I18nModule.forRoot(i18n_config_1.i18nConfig),
+            schedule_1.ScheduleModule.forRoot(),
+            region_module_1.RegionModule,
             auth_module_1.AuthModule,
+            wallet_module_1.WalletModule,
             email_module_1.EmailModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

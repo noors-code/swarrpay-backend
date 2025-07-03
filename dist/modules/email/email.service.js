@@ -98,6 +98,46 @@ let EmailService = class EmailService {
             throw new Error('Failed to send welcome email');
         }
     }
+    async sendTransactionConfirmationEmail(email, details) {
+        const fromEmail = this.configService.get('SENDGRID_FROM_EMAIL');
+        if (!fromEmail) {
+            throw new Error('SENDGRID_FROM_EMAIL is not defined in environment variables');
+        }
+        const msg = {
+            to: email,
+            from: fromEmail,
+            subject: 'Confirm Your SwarpPay Transaction',
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Transaction Confirmation Required</h2>
+          <p>Please confirm your transaction with the following details:</p>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 5px;">
+            <p><strong>Amount:</strong> ${details.amount} SOL</p>
+            <p><strong>To Address:</strong> ${details.toAddress}</p>
+          </div>
+          <p>Your confirmation code is:</p>
+          <h1 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; padding: 20px; background: #f5f5f5; text-align: center; border-radius: 5px;">${details.otp}</h1>
+          <p>This code will expire in 5 minutes.</p>
+          <p>If you didn't initiate this transaction, please ignore this email and secure your account.</p>
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <p style="font-size: 12px; color: #666;">
+              This is an automated message from SwarpPay. Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `,
+        };
+        try {
+            await SendGrid.send(msg);
+        }
+        catch (error) {
+            console.error('SendGrid error:', error);
+            if (error.response) {
+                console.error('Error response:', error.response.body);
+            }
+            throw new Error('Failed to send transaction confirmation email');
+        }
+    }
 };
 exports.EmailService = EmailService;
 exports.EmailService = EmailService = __decorate([

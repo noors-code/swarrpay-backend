@@ -1,0 +1,36 @@
+{
+  "wallet": {
+    "transaction": {
+      "sent": "لقد أرسلت {amount} SOL إلى {address}",
+      "received": "لقد استلمت {amount} SOL من {address}",
+      "failed": "فشلت المعاملة: {reason}",
+      "daily_limit": "تم الوصول إلى الحد اليومي للمعاملات"
+    },
+    "security": {
+      "pin_required": "مطلوب رمز المعاملة",
+      "email_confirmation": "يرجى التحقق من بريدك الإلكتروني لتأكيد المعاملة",
+      "address_not_allowed": "العنوان غير مدرج في القائمة المسموح بها"
+    },
+    "errors": {
+      "insufficient_funds": "رصيد غير كافٍ",
+      "invalid_address": "عنوان المحفظة غير صالح",
+      "network_error": "خطأ في الشبكة، يرجى المحاولة مرة أخرى"
+    }
+  },
+  "auth": {
+    "login": {
+      "success": "تم تسجيل الدخول بنجاح",
+      "failed": "فشل تسجيل الدخول",
+      "2fa_required": "مطلوب التحقق بخطوتين"
+    },
+    "register": {
+      "success": "تم التسجيل بنجاح",
+      "email_sent": "تم إرسال رسالة التحقق"
+    }
+  },
+  "regions": {
+    "timezone": "Asia/Dubai",
+    "currency": "AED",
+    "date_format": "DD/MM/YYYY"
+  }
+} 
