@@ -1,4 +1,4 @@
-import { AcceptLanguageResolver, I18nOptions } from 'nestjs-i18n';
+import { AcceptLanguageResolver, QueryResolver, I18nOptions } from 'nestjs-i18n';
 import * as path from 'path';
 
 export const i18nConfig: I18nOptions = {
@@ -8,6 +8,7 @@ export const i18nConfig: I18nOptions = {
     watch: true,
   },
   resolvers: [
+    new QueryResolver(['lang', 'locale']),
     new AcceptLanguageResolver({ matchType: 'strict-loose' }),
   ],
   typesOutputPath: path.join(__dirname, '../generated/i18n.generated.ts'),
