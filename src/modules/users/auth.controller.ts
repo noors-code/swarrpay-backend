@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Request,
+  Req,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
@@ -6,12 +14,13 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AppleAuthGuard } from './guards/apple-auth.guard';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
+import { PhoneLoginDto } from './dto/phone-login.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
   ApiBearerAuth,
-  ApiBody 
+  ApiBody,
 } from '@nestjs/swagger';
 
 @ApiTags('auth')
@@ -21,15 +30,16 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'User successfully registered. OTP sent to email.',
     schema: {
       type: 'object',
       properties: {
         message: {
           type: 'string',
-          example: 'Registration successful. Please verify your email with the OTP sent.',
+          example:
+            'Registration successful. Please verify your email with the OTP sent.',
         },
       },
     },
@@ -42,8 +52,8 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Login user' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Login successful',
     schema: {
       oneOf: [
@@ -75,8 +85,8 @@ export class AuthController {
 
   @Post('verify-otp')
   @ApiOperation({ summary: 'Verify OTP code' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'OTP verified successfully',
     schema: {
       type: 'object',
@@ -96,8 +106,8 @@ export class AuthController {
   @Get('profile')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user profile' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Returns the user profile',
     schema: {
       type: 'object',
@@ -125,8 +135,8 @@ export class AuthController {
 
   @Get('google/callback')
   @ApiOperation({ summary: 'Google OAuth2 callback' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Returns access token after successful Google login',
     schema: {
       type: 'object',
@@ -162,8 +172,8 @@ export class AuthController {
 
   @Post('apple/callback')
   @ApiOperation({ summary: 'Apple Sign In callback' })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Returns access token after successful Apple login',
     schema: {
       type: 'object',
@@ -188,4 +198,23 @@ export class AuthController {
   async appleAuthRedirect(@Req() req) {
     return this.authService.appleLogin(req);
   }
-} 
+  @Post('login-phone')
+  @ApiOperation({ summary: 'Login with phone and password' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    schema: {
+      type: 'object',
+      properties: {
+        token: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid phone or password' })
+  async loginWithPhone(@Body() loginPhoneDto: PhoneLoginDto) {
+    return this.authService.loginWithPhone(loginPhoneDto);
+  }
+}

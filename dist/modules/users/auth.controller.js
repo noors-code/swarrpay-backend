@@ -21,6 +21,7 @@ const verify_otp_dto_1 = require("./dto/verify-otp.dto");
 const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 const google_auth_guard_1 = require("./guards/google-auth.guard");
 const apple_auth_guard_1 = require("./guards/apple-auth.guard");
+const phone_login_dto_1 = require("./dto/phone-login.dto");
 const swagger_1 = require("@nestjs/swagger");
 let AuthController = class AuthController {
     authService;
@@ -48,6 +49,9 @@ let AuthController = class AuthController {
     }
     async appleAuthRedirect(req) {
         return this.authService.appleLogin(req);
+    }
+    async loginWithPhone(loginPhoneDto) {
+        return this.authService.loginWithPhone(loginPhoneDto);
     }
 };
 exports.AuthController = AuthController;
@@ -235,6 +239,28 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "appleAuthRedirect", null);
+__decorate([
+    (0, common_1.Post)('login-phone'),
+    (0, swagger_1.ApiOperation)({ summary: 'Login with phone and password' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Login successful',
+        schema: {
+            type: 'object',
+            properties: {
+                token: {
+                    type: 'string',
+                    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+                },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Invalid phone or password' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [phone_login_dto_1.PhoneLoginDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "loginWithPhone", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('auth'),
     (0, common_1.Controller)('auth'),

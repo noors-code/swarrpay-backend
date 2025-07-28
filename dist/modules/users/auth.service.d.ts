@@ -5,6 +5,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
+import { PhoneLoginDto } from './dto/phone-login.dto';
 export declare class AuthService {
     private readonly userRepository;
     private readonly jwtService;
@@ -18,6 +19,9 @@ export declare class AuthService {
     login(loginDto: LoginDto): Promise<{
         otpSent: boolean;
     } | {
+        token: string;
+    }>;
+    loginWithPhone(loginDto: PhoneLoginDto): Promise<{
         token: string;
     }>;
     verifyOTP(email: string, otp: string): Promise<{

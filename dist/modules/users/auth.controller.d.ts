@@ -2,6 +2,7 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { PhoneLoginDto } from './dto/phone-login.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -37,5 +38,8 @@ export declare class AuthController {
             firstName: string;
             lastName: string;
         };
+    }>;
+    loginWithPhone(loginPhoneDto: PhoneLoginDto): Promise<{
+        token: string;
     }>;
 }

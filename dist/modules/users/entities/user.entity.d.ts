@@ -11,4 +11,5 @@ export declare class User {
     profilePicture: string;
     createdAt: Date;
     updatedAt: Date;
+    phoneNumber: string | null;
 }

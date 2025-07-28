@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Wallet } from './entities/wallet.entity';
@@ -13,7 +18,10 @@ import { EmailService } from '../email/email.service';
 import { CreateWalletDto } from './dto/create-wallet.dto';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { SendTransactionDto } from './dto/transaction.dto';
-import { WalletResponseDto, CreateWalletResponseDto } from './dto/wallet-response.dto';
+import {
+  WalletResponseDto,
+  CreateWalletResponseDto,
+} from './dto/wallet-response.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
@@ -36,11 +44,13 @@ export class WalletService {
       network === 'mainnet'
         ? web3.clusterApiUrl('mainnet-beta')
         : web3.clusterApiUrl('devnet'),
-      'confirmed'
+      'confirmed',
     );
   }
 
-  private async transformToWalletResponse(wallet: Wallet): Promise<WalletResponseDto> {
+  private async transformToWalletResponse(
+    wallet: Wallet,
+  ): Promise<WalletResponseDto> {
     const balance = await this.getWalletBalance(wallet.publicKey);
     return {
       id: wallet.id,
@@ -55,7 +65,10 @@ export class WalletService {
     };
   }
 
-  async createWallet(user: User, createWalletDto: CreateWalletDto): Promise<CreateWalletResponseDto> {
+  async createWallet(
+    user: User,
+    createWalletDto: CreateWalletDto,
+  ): Promise<CreateWalletResponseDto> {
     const seedPhrase = bip39.generateMnemonic();
     const seed = await bip39.mnemonicToSeed(seedPhrase);
     const keypair = web3.Keypair.fromSeed(seed.slice(0, 32));
@@ -86,7 +99,9 @@ export class WalletService {
       order: { createdAt: 'DESC' },
     });
 
-    return Promise.all(wallets.map(wallet => this.transformToWalletResponse(wallet)));
+    return Promise.all(
+      wallets.map((wallet) => this.transformToWalletResponse(wallet)),
+    );
   }
 
   async getWallet(id: string, userId: string): Promise<WalletResponseDto> {
@@ -144,13 +159,15 @@ export class WalletService {
     type: 'SEND' | 'RECEIVE',
   ) {
     const amount = transaction.amount;
-    const address = type === 'SEND' ? transaction.toAddress : transaction.fromAddress;
+    const address =
+      type === 'SEND' ? transaction.toAddress : transaction.fromAddress;
 
     await this.notificationsService.sendNotification(userId, {
       title: type === 'SEND' ? 'Transaction Sent' : 'Transaction Received',
-      body: type === 'SEND' 
-        ? `You sent ${amount} SOL to ${address}`
-        : `You received ${amount} SOL from ${address}`,
+      body:
+        type === 'SEND'
+          ? `You sent ${amount} SOL to ${address}`
+          : `You received ${amount} SOL from ${address}`,
       type: 'TRANSACTION',
       data: {
         transactionId: transaction.id,
@@ -215,29 +232,31 @@ export class WalletService {
       const signatures = await this.connection.getSignaturesForAddress(
         publicKey,
         { limit: 50 },
-        'confirmed'
+        'confirmed',
       );
 
       for (const sigInfo of signatures) {
         const existingTx = await this.transactionRepository.findOne({
-          where: { signature: sigInfo.signature }
+          where: { signature: sigInfo.signature },
         });
 
         if (!existingTx) {
           const tx = await this.connection.getTransaction(sigInfo.signature, {
-            maxSupportedTransactionVersion: 0
+            maxSupportedTransactionVersion: 0,
           });
 
           if (tx) {
             const postBalances = tx.meta?.postBalances?.[0] || 0;
             const preBalances = tx.meta?.preBalances?.[0] || 0;
-            const amount = Math.abs(postBalances - preBalances) / web3.LAMPORTS_PER_SOL;
+            const amount =
+              Math.abs(postBalances - preBalances) / web3.LAMPORTS_PER_SOL;
             const fee = (tx.meta?.fee || 0) / web3.LAMPORTS_PER_SOL;
 
             const message = tx.transaction.message;
-            const accountKeys = 'accountKeys' in message 
-              ? message.accountKeys 
-              : message.getAccountKeys();
+            const accountKeys =
+              'accountKeys' in message
+                ? message.accountKeys
+                : message.getAccountKeys();
 
             const type = postBalances > preBalances ? 'RECEIVE' : 'SEND';
 
@@ -254,7 +273,9 @@ export class WalletService {
               metadata: {
                 slot: tx.slot,
                 blockTime: tx.blockTime,
-                numConfirmations: sigInfo.slot ? await this.connection.getSlot('confirmed') - sigInfo.slot : undefined,
+                numConfirmations: sigInfo.slot
+                  ? (await this.connection.getSlot('confirmed')) - sigInfo.slot
+                  : undefined,
               },
             });
 
@@ -289,10 +310,13 @@ export class WalletService {
       .where('transaction.walletId = :walletId', { walletId });
 
     if (startDate && endDate) {
-      queryBuilder.andWhere('transaction.timestamp BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      });
+      queryBuilder.andWhere(
+        'transaction.timestamp BETWEEN :startDate AND :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
     }
 
     const [transactions, total] = await queryBuilder
@@ -338,7 +362,10 @@ export class WalletService {
     }
 
     if (settings.transactionPIN) {
-      wallet.transactionPINHash = await bcrypt.hash(settings.transactionPIN, 10);
+      wallet.transactionPINHash = await bcrypt.hash(
+        settings.transactionPIN,
+        10,
+      );
       wallet.requirePINForTransactions = true;
     }
 
@@ -354,8 +381,11 @@ export class WalletService {
       wallet.allowedAddresses = settings.allowedAddresses;
     }
 
-    if (typeof settings.requireEmailConfirmationForTransactions !== 'undefined') {
-      wallet.requireEmailConfirmationForTransactions = settings.requireEmailConfirmationForTransactions;
+    if (
+      typeof settings.requireEmailConfirmationForTransactions !== 'undefined'
+    ) {
+      wallet.requireEmailConfirmationForTransactions =
+        settings.requireEmailConfirmationForTransactions;
     }
 
     return this.walletRepository.save(wallet);
@@ -377,7 +407,9 @@ export class WalletService {
     // Check if wallet is locked
     if (wallet.isLocked) {
       if (wallet.lockExpiresAt && wallet.lockExpiresAt > new Date()) {
-        throw new UnauthorizedException('Wallet is locked. Please try again later.');
+        throw new UnauthorizedException(
+          'Wallet is locked. Please try again later.',
+        );
       }
       // If lock has expired, reset the lock
       wallet.isLocked = false;
@@ -482,7 +514,7 @@ export class WalletService {
     const wallet = await this.walletRepository.findOne({
       where: { id: walletId, userId },
     });
-    
+
     if (!wallet) {
       throw new NotFoundException('Wallet not found');
     }
@@ -494,20 +526,28 @@ export class WalletService {
     // Generate OTP for transaction
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpHash = await bcrypt.hash(otp, 10);
-    
+
     // Store OTP hash in wallet temporarily
     wallet.transactionConfirmationCode = otpHash;
     wallet.transactionConfirmationExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
     await this.walletRepository.save(wallet);
 
     // Send confirmation email
-    await this.emailService.sendTransactionConfirmationEmail(
-      wallet.user.email,
-      {
-        amount: transactionDetails.amount,
-        toAddress: transactionDetails.toAddress,
-        otp,
-      },
-    );
+    if (wallet.user.email) {
+      await this.emailService.sendTransactionConfirmationEmail(
+        wallet.user.email,
+        {
+          amount: transactionDetails.amount,
+          toAddress: transactionDetails.toAddress,
+          otp,
+        },
+      );
+    } else {
+      // Optional: handle missing email case
+      // For example, log a warning or throw an error
+      console.warn(
+        'User email is missing; cannot send transaction confirmation email.',
+      );
+    }
   }
-} 
+}

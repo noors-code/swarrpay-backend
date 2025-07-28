@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -8,6 +12,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
+import { PhoneLoginDto } from './dto/phone-login.dto';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
@@ -24,15 +30,25 @@ export class AuthService {
   }
 
   async register(createUserDto: CreateUserDto): Promise<{ message: string }> {
+    const { email, phoneNumber, password } = createUserDto;
+
+    if (!email && !phoneNumber) {
+      throw new BadRequestException('Email or phone number is required');
+    }
+
+    // Check if user already exists by email or phoneNumber
     const existingUser = await this.userRepository.findOne({
-      where: { email: createUserDto.email },
+      where: email ? { email } : { phoneNumber },
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException(
+        email ? 'Email already exists' : 'Phone number already exists',
+      );
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = this.userRepository.create({
       ...createUserDto,
       password: hashedPassword,
@@ -41,10 +57,13 @@ export class AuthService {
     });
 
     await this.userRepository.save(user);
+
     return { message: 'Registration successful.' };
   }
 
-  async login(loginDto: LoginDto): Promise<{ otpSent: boolean } | { token: string }> {
+  async login(
+    loginDto: LoginDto,
+  ): Promise<{ otpSent: boolean } | { token: string }> {
     const user = await this.userRepository.findOne({
       where: { email: loginDto.email },
     });
@@ -53,12 +72,37 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // Skip 2FA for testing
+    const token = this.generateToken(user);
+    return { token };
+  }
+  // phone login method
+  async loginWithPhone(loginDto: PhoneLoginDto): Promise<{ token: string }> {
+    const { phoneNumber, password } = loginDto;
+    console.log('Phone login attempt:', phoneNumber);
+
+    const user = await this.userRepository.findOne({
+      where: { phoneNumber },
+    });
+
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     const token = this.generateToken(user);
     return { token };
   }
@@ -84,11 +128,15 @@ export class AuthService {
     // Clear OTP after successful verification
     user.otpCode = null;
     user.otpExpiry = null;
+
     if (!user.isVerified) {
       user.isVerified = true;
-      // Send welcome email after first verification
-      await this.emailService.sendWelcomeEmail(user.email, user.firstName);
+      if (user.email) {
+        // Only send welcome email if email exists
+        await this.emailService.sendWelcomeEmail(user.email, user.firstName);
+      }
     }
+
     await this.userRepository.save(user);
 
     const token = this.generateToken(user);
@@ -180,4 +228,4 @@ export class AuthService {
       },
     };
   }
-} 
+}

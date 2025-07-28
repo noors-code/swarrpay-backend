@@ -25,6 +25,7 @@ let User = class User {
     profilePicture;
     createdAt;
     updatedAt;
+    phoneNumber;
 };
 exports.User = User;
 __decorate([
@@ -32,7 +33,7 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ unique: true }),
+    (0, typeorm_1.Column)({ unique: true, nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "email", void 0);
 __decorate([
@@ -78,6 +79,10 @@ __decorate([
     (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
 ], User.prototype, "updatedAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ unique: true, nullable: true, type: 'varchar' }),
+    __metadata("design:type", Object)
+], User.prototype, "phoneNumber", void 0);
 exports.User = User = __decorate([
     (0, typeorm_1.Entity)('users')
 ], User);

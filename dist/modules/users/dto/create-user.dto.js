@@ -14,20 +14,32 @@ const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 class CreateUserDto {
     email;
+    phoneNumber;
     firstName;
     lastName;
     password;
 }
 exports.CreateUserDto = CreateUserDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({
+    (0, swagger_1.ApiPropertyOptional)({
         example: 'john@example.com',
         description: 'The email address of the user',
     }),
+    (0, class_validator_1.ValidateIf)((o) => !o.phoneNumber),
     (0, class_validator_1.IsEmail)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "email", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        example: '+923001234567',
+        description: 'The phone number of the user',
+    }),
+    (0, class_validator_1.ValidateIf)((o) => !o.email),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateUserDto.prototype, "phoneNumber", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         example: 'John',

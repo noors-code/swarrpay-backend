@@ -21,6 +21,7 @@ const bcrypt = require("bcrypt");
 const user_entity_1 = require("./entities/user.entity");
 const email_service_1 = require("../email/email.service");
 const config_1 = require("@nestjs/config");
+const common_2 = require("@nestjs/common");
 let AuthService = class AuthService {
     userRepository;
     jwtService;
@@ -36,13 +37,17 @@ let AuthService = class AuthService {
         return Math.floor(100000 + Math.random() * 900000).toString();
     }
     async register(createUserDto) {
+        const { email, phoneNumber, password } = createUserDto;
+        if (!email && !phoneNumber) {
+            throw new common_2.BadRequestException('Email or phone number is required');
+        }
         const existingUser = await this.userRepository.findOne({
-            where: { email: createUserDto.email },
+            where: email ? { email } : { phoneNumber },
         });
         if (existingUser) {
-            throw new common_1.ConflictException('Email already exists');
+            throw new common_1.ConflictException(email ? 'Email already exists' : 'Phone number already exists');
         }
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
         const user = this.userRepository.create({
             ...createUserDto,
             password: hashedPassword,
@@ -60,6 +65,22 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+        if (!isPasswordValid) {
+            throw new common_1.UnauthorizedException('Invalid credentials');
+        }
+        const token = this.generateToken(user);
+        return { token };
+    }
+    async loginWithPhone(loginDto) {
+        const { phoneNumber, password } = loginDto;
+        console.log('Phone login attempt:', phoneNumber);
+        const user = await this.userRepository.findOne({
+            where: { phoneNumber },
+        });
+        if (!user || !user.password) {
+            throw new common_1.UnauthorizedException('Invalid credentials');
+        }
+        const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
@@ -84,7 +105,9 @@ let AuthService = class AuthService {
         user.otpExpiry = null;
         if (!user.isVerified) {
             user.isVerified = true;
-            await this.emailService.sendWelcomeEmail(user.email, user.firstName);
+            if (user.email) {
+                await this.emailService.sendWelcomeEmail(user.email, user.firstName);
+            }
         }
         await this.userRepository.save(user);
         const token = this.generateToken(user);
